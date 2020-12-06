@@ -158,8 +158,9 @@ fn main() {
     let mut inbuf = String::new(); // buffer
     loop {
         match io::stdin().read_line(&mut inbuf) {
-            Ok(0) => { break } // EOF
-            Ok(_) => { // not EOF
+            Ok(0) => break, // EOF
+            Ok(_) => {
+                // not EOF
                 let trimmed = inbuf.trim().to_uppercase().to_string(); // 末尾の改行文字を取り除き，大文字に揃える
                 t.insert(Node::from_string(&trimmed));
                 inbuf.clear(); // バッファを巻き戻すためにclearする（これがないとどんどん追記されてしまう）
