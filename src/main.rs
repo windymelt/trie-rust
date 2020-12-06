@@ -1,6 +1,7 @@
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
+use std::io;
 
 #[derive(Hash)]
 struct Node {
@@ -17,16 +18,21 @@ impl Node {
     }
     
     fn from_string(s: &String) -> Node {
-        if s.is_empty() {
-            return Node {
-                sym: None,
-                children: Vec::new(),
-            };
-        } else {
-            return Node {
-                sym: _char_at(&s, 0),
-                children: vec![Node::from_string(&_tail_str(s))],
-            };
+        return Node::_from_iter(&mut s.chars());
+    }
+
+    fn _from_iter(i: &mut std::str::Chars) -> Node {
+        let c = i.next();
+        match c {
+            Some(_) => {
+                return Node {
+                    sym: c,
+                    children: vec![Node::_from_iter(i)],
+                }
+            }
+            None => {
+                return Node::new_empty(None);
+            }
         }
     }
     
@@ -147,12 +153,23 @@ fn _merge_node(n: Node, m: Node) -> Node {
 
 fn main() {
     let mut t = Trie::new();
-    let n = Node::from_string(&"windymelt".to_string());
-    let m = Node::from_string(&"window".to_string());
-    let o = Node::from_string(&"veritas".to_string());
-    t.insert(n);
-    t.insert(m);
-    t.insert(o);
-    
+
+    // EOFに到達するまでstdinから1行ずつ文字列を入力し，Trieに追加していく
+    let mut inbuf = String::new(); // buffer
+    loop {
+        match io::stdin().read_line(&mut inbuf) {
+            Ok(0) => { break } // EOF
+            Ok(_) => { // not EOF
+                let trimmed = inbuf.trim().to_uppercase().to_string(); // 末尾の改行文字を取り除き，大文字に揃える
+                t.insert(Node::from_string(&trimmed));
+                inbuf.clear(); // バッファを巻き戻すためにclearする（これがないとどんどん追記されてしまう）
+            }
+            Err(e) => {
+                eprintln!("Error occurred while reading from stdin: {}", e);
+                std::process::exit(1);
+            }
+        }
+    }
+
     t.print_dot();
 }
