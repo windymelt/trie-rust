@@ -15,6 +15,8 @@ candle
 
 `out.png`:
 
+![out.png](https://raw.githubusercontent.com/windymelt/trie-rust/main/out.png)
+
 ## Interface
 
 Use stdin as text input. Text is parsed line per line. Characters will be all up-cased.
