@@ -1,9 +1,6 @@
-use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
-use std::hash::{Hash, Hasher};
 use std::io;
 
-#[derive(Hash)]
 struct Node {
     sym: Option<char>,
     children: Vec<Node>,
@@ -37,10 +34,9 @@ impl Node {
     }
     
     fn id(&self) -> String {
-        let mut h = DefaultHasher::new();
-        self.hash(&mut h);
-        let id = h.finish();
-        return format!("node_{}", id);
+        // idとしてポインタのアドレスを利用する
+        let addr = (self as *const Node) as usize;
+        return format!("node_{}", addr);
     }
 
     fn print_dot(&self) {
@@ -173,4 +169,43 @@ fn main() {
     }
 
     t.print_dot();
+}
+
+// TEST SECTION
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn it_works() {
+        assert_eq!(2 + 2, 4);
+    }
+
+    #[test]
+    fn can_create_single_node() {
+        let n = Node::from_string(&"win".to_string());
+        assert_eq!(n.sym, Some('w'));
+        assert_eq!(n.children.len(), 1);
+        assert_eq!(n.children[0].sym, Some('i'));
+        assert_eq!(n.children[0].children[0].sym, Some('n'));
+    }
+    #[test]
+    fn can_merge_nodes() {
+        let n = Node::from_string(&"win".to_string());
+        let m = Node::from_string(&"won".to_string());
+        let nm = _merge_node(n, m);
+        assert_eq!(nm.sym, Some('w'));
+        assert_eq!(nm.children.len(), 2);
+        if nm.children[0].sym == Some('i') {
+            assert_eq!(nm.children[1].sym, Some('o'));
+        } else {
+            assert_eq!(nm.children[0].sym, Some('o'));
+            assert_eq!(nm.children[1].sym, Some('i'));
+        }
+        
+        assert_eq!(nm.children[1].children[0].sym, Some('n'));
+        assert_eq!(nm.children[0].children[0].sym, Some('n'));
+
+        // 同じ文字でも違うノードは違うidになる
+        assert_ne!(nm.children[0].children[0].id(), nm.children[1].children[0].id());
+    }
 }
