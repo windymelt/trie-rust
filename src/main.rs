@@ -1,12 +1,21 @@
 use std::collections::HashMap;
 use std::io;
 
+// Trieを構成するノードを表現するstruct
+// 1つの文字と，0コ以上の子Nodeを持つことができる
+// 文字列をNodeに変換すると，文字数分のNodeが作成され，それらが文字列の先頭から末尾にかけての方向で親子関係になる
+// e.g. "text" -> [t] --> [e] --> [x] --> [t] --> []
 struct Node {
+    // ノード1つが表現する文字
+    // 終端を示せるようにOption<char>としている
     sym: Option<char>,
+    // ノードにぶら下がっている子ノードを表現するVec
+    // Vecは内部的にポインタになっているのでコンパイル時にサイズを決定できる
     children: Vec<Node>,
 }
 
 impl Node {
+    // 子ノードを持たないNodeを生成する
     fn new_empty(sym: Option<char>) -> Node {
         return Node {
             sym: sym,
@@ -14,10 +23,14 @@ impl Node {
         };
     }
     
+    // StringからNodeを作成する
     fn from_string(s: &String) -> Node {
+        // chars()を使うと文字列から1文字ずつ取り出せるイテレータが得られるので，これを_from_iterに渡す
         return Node::_from_iter(&mut s.chars());
     }
 
+    // from_stringの実質的な中身
+    // Option<char>が出てくる不思議なイテレータをnext()しながら自分を再帰呼び出しすることで，1文字ずつずらしてNodeを作成できる
     fn _from_iter(i: &mut std::str::Chars) -> Node {
         let c = i.next();
         match c {
@@ -33,12 +46,16 @@ impl Node {
         }
     }
     
+    // Nodeの識別子を文字列として返す
+    // DOT言語を吐き出す際のノード名として使う
     fn id(&self) -> String {
         // idとしてポインタのアドレスを利用する
         let addr = (self as *const Node) as usize;
         return format!("node_{}", addr);
     }
 
+    // NodeをDOT言語として出力する
+    // グラフのノードの定義とエッジの定義が同時に出力される
     fn print_dot(&self) {
         match self.sym {
             Some(sym) => {
@@ -48,7 +65,7 @@ impl Node {
                         break;
                     }
                     println!("{} -> {};", self.id(), &nn.id());
-                    // recursively print
+                    // 再帰的に子ノードについても呼び出すことでノードにぶら下がった全てのノードが出力される
                     nn.print_dot();
                 }
             }
@@ -57,32 +74,40 @@ impl Node {
     }
 }
 
+// トライ木を表現するstruct
+// 別の文字から始まる複数のNodeを束ねただけである
 struct Trie {
     children: Vec<Node>,
 }
 
 impl Trie {
+    // 空のTrieを生成する
     fn new() -> Trie {
         return Trie { children: vec![] };
     }
 
+    // TrieにNodeを挿入する
     fn insert(&mut self, m: Node) {
         // 同じSymを持つNodeがあるか探索する
         let idx = self.children.iter().position(|n| n.sym == m.sym);
         match idx {
             Some(i) => {
+                // 同じSymのNodeがあれば，そのNodeとマージして終了
                 let found = self.children.remove(i);
                 let new_node = _merge_node(found, m);
                 self.children.push(new_node);
             }
             None => {
+                // 同じSymのNodeがなければ，mを子ノードとして追加して終了
                 self.children.push(m);
             }
         }
     }
 
+    // TrieをDOT言語で出力する
+    // ヘッダ・フッタを出力し，あとはNode::print_dotに任せる
     fn print_dot(&self) {
-        println!("digraph {{\nrankdir=UB;");
+        println!("digraph {{\nrankdir=LR;");
         for n in &self.children {
             n.print_dot();
         }
@@ -99,9 +124,10 @@ fn _describe_node(n: &Node) {
     eprintln!();
 }
 
+// 2つのNodeをマージし，新たなNodeを生成する
 // TODO: 毎回ノードを生成するので効率が悪い．nをdestructiveに上書きしていくようにしたい
-// n, mともに同じsymを持っているという前提
 fn _merge_node(n: Node, m: Node) -> Node {
+    // n, mともに同じsymを持っているという前提
     assert_eq!(n.sym, m.sym);
 
     // n,mの子ノードをsymでグルーピングして1ノードに寄せる
