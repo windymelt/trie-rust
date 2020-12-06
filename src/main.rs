@@ -90,14 +90,6 @@ impl Trie {
     }
 }
 
-fn _char_at(s: &String, i: usize) -> Option<char> {
-    return s.chars().nth(i);
-}
-
-fn _tail_str(s: &String) -> String {
-    s.as_str()[1..].to_string() // 無駄っぽい
-}
-
 // DEBUG METHOD
 fn _describe_node(n: &Node) {
     eprintln!("Node [{:?}]:", n.sym);
